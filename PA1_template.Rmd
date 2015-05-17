@@ -25,9 +25,7 @@ Aggregating the Steps with respect to date
 Total_Steps <- aggregate(steps ~ date, data = activity, sum, na.rm = TRUE)
 ```
 Now Lets Plot a histogram with Daily Total Steps
-```{r, echo=FALSE}
-install.packages("ggplot2")
-```
+
 ```{r, echo=TRUE}
 library(ggplot2)
 qplot(Total_Steps$steps, data=Total_Steps,geom="histogram", color="orange", xlab="Steps", ylab="Frequency", main="Total Steps in Activity per Day",binwidth=3000)
