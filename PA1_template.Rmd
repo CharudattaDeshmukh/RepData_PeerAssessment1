@@ -1,21 +1,110 @@
----
-title: "Reproducible Research :Peer Assignment"
-author: "Charudatta Deshmukh"
-date: "Monday, May 18, 2015"
-output: html_document
----
-
-
-
-```{r}
+--------------------------------------------------------------
+Title: "Reproducible Research :Peer Assignment1"
+Author: "Charudatta Deshmukh"
+Date: "Monday, May 18, 2015"
+Output: html_document
+--------------------------------------------------------------
+#What is mean total number of steps taken per day?
+Loading the csv file for activity data.
+```{r, echo=TRUE}
 activity <- read.csv("activity/activity.csv", colClasses = c("numeric", "character","numeric"))
-head(activity)
+head(activity,10)
 ```
 
-You can also embed plots, for example:
+Checking the Fields in the Dataset
+```{r, echo=TRUE}
+names(activity)
 
+```
+Setting the Date Field
+```{r, echo=TRUE}
+activity$date <- as.Date(activity$date, "%Y-%m-%d")
+```
+Aggregating the Steps with respect to date
+```{r, echo=TRUE}
+Total_Steps <- aggregate(steps ~ date, data = activity, sum, na.rm = TRUE)
+```
+Now Lets Plot a histogram with Daily Total Steps
 ```{r, echo=FALSE}
-plot(cars)
+install.packages("ggplot2")
+```
+```{r, echo=TRUE}
+library(ggplot2)
+qplot(Total_Steps$steps, data=Total_Steps,geom="histogram", color="orange", xlab="Steps", ylab="Frequency", main="Total Steps in Activity per Day",binwidth=3000)
+```
+mean and median
+```{r, echo=TRUE}
+mean(Total_Steps$steps)
+median(Total_Steps$steps)
+```
+#What is the average daily activity pattern?
+```{r, echo=TRUE}
+time.series <- tapply(activity$steps, activity$interval, mean, na.rm = TRUE)
+```
+Mean of steps and time series plot
+```{r, echo=TRUE}
+plot(row.names(time.series), time.series, type = "l", xlab = "Five minute interval",ylab = "Average through all Days", main = "Average  steps taken",col = "red")
+```
+Max five minute interval
+```{r,echo=TRUE}
+max.interval <- which.max(time.series)
+names(max.interval)
+```
+#Imputing missing values
+Missing Values
+```{r,echo=TRUE}
+activity.NA <- sum(is.na(activity))
+activity.NA
+```
+Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc
+```{r,echo=TRUE}
+StepsAverage <- aggregate(steps ~ interval, data = activity, FUN = mean)
+fillNA <- numeric()
+for (i in 1:nrow(activity)) {
+    obs <- activity[i, ]
+    if (is.na(obs$steps)) {
+        steps <- subset(StepsAverage, interval == obs$interval)$steps
+    } else {
+        steps <- obs$steps
+    }
+    fillNA <- c(fillNA, steps)
+}
+withmiss_activity <- activity
+withmiss_activity$steps <- fillNA
+```
+Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+```{r,echo=TRUE}
+StepsTotal2 <- aggregate(steps ~ date, data = withmiss_activity, sum, na.rm = TRUE)
+hist(StepsTotal2$steps, main = "Total steps by day", xlab = "day", col = "red")
+```
+Mean and Median
+```{r,echo=TRUE}
+mean(StepsTotal2$steps)
+median(StepsTotal2$steps)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+#Are there differences in activity patterns between weekdays and weekends?
+Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+```{r,echo=TRUE}
+day <- weekdays(activity$date)
+daylevel <- vector()
+for (i in 1:nrow(activity)) {
+    if (day[i] == "Saturday") {
+        daylevel[i] <- "Weekend"
+    } else if (day[i] == "Sunday") {
+        daylevel[i] <- "Weekend"
+    } else {
+        daylevel[i] <- "Weekday"
+    }
+}
+activity$daylevel <- daylevel
+activity$daylevel <- factor(activity$daylevel)
+
+stepsByDay <- aggregate(steps ~ interval + daylevel, data = activity, mean)
+names(stepsByDay) <- c("interval", "daylevel", "steps")
+```
+Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
+```{r,echo=TRUE}
+library(lattice)
+xyplot(steps ~ interval | daylevel, stepsByDay, type = "l", layout = c(1, 2), xlab = "Interval", ylab = "Number of steps")
+```
